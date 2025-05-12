@@ -1,0 +1,380 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        'sans': ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        primary: {
+                            50: '#eff6ff',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                        }
+                    }
+                }
+            }
+        };
+    </script>
+</head>
+<body class="bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 font-sans transition-colors duration-200">
+    <!-- @COMPONENT: WeatherDashboard [main container] -->
+    <div class="min-h-screen">
+        <!-- @COMPONENT: Header [app header with theme toggle] -->
+        <header class="bg-white dark:bg-slate-800 shadow-sm border-b border-slate-200 dark:border-slate-700">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between items-center h-16">
+                    <div class="flex items-center space-x-3">
+                        <i class="fas fa-cloud-sun text-2xl text-primary-600"></i>
+                        <h1 class="text-xl font-semibold text-slate-900 dark:text-slate-100">Weather Dashboard</h1>
+                    </div>
+                    
+                    <!-- @COMPONENT: ThemeToggle [dark/light mode switch] -->
+                    <button 
+                        id="themeToggle" 
+                        class="relative inline-flex h-6 w-11 items-center rounded-full bg-slate-200 dark:bg-slate-600 transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800"
+                        data-event="click:toggleTheme"
+                        data-implementation="Should toggle between light and dark themes and persist in localStorage">
+                        <span class="sr-only">Toggle theme</span>
+                        <span class="inline-block h-4 w-4 transform rounded-full bg-white dark:bg-slate-900 transition-transform translate-x-1 dark:translate-x-6 shadow-sm">
+                            <i class="fas fa-sun text-xs text-amber-500 dark:hidden absolute inset-0 flex items-center justify-center"></i>
+                            <i class="fas fa-moon text-xs text-slate-400 hidden dark:block absolute inset-0 flex items-center justify-center"></i>
+                        </span>
+                    </button>
+                    <!-- @END_COMPONENT: ThemeToggle -->
+                </div>
+            </div>
+        </header>
+        <!-- @END_COMPONENT: Header -->
+
+        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <!-- @COMPONENT: SearchSection [city search functionality] -->
+            <div class="mb-8">
+                <div class="max-w-md mx-auto">
+                    <div class="relative">
+                        <input 
+                            type="text" 
+                            id="citySearch"
+                            placeholder="Enter city name..."
+                            data-bind="searchQuery"
+                            data-event="keypress:handleSearchKeyPress"
+                            data-implementation="Should validate input and trigger search on Enter key"
+                            class="w-full px-4 py-3 pr-12 text-sm border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder-slate-500 dark:placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200"
+                        />
+                        <button 
+                            id="searchButton"
+                            data-event="click:searchWeather"
+                            data-implementation="Should trigger weather search for entered city"
+                            class="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-slate-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors duration-200">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                    
+                    <!-- @STATE: searchError:string = '' -->
+                    <div id="searchError" class="mt-2 text-sm text-red-600 dark:text-red-400 hidden" data-bind="searchError">
+                        <!-- Error message will appear here -->
+                    </div>
+                </div>
+            </div>
+            <!-- @END_COMPONENT: SearchSection -->
+
+            <!-- @COMPONENT: LoadingState [shown during API calls] -->
+            <div id="loadingState" class="hidden">
+                <div class="flex items-center justify-center py-12">
+                    <div class="flex items-center space-x-3">
+                        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+                        <span class="text-slate-600 dark:text-slate-400">Loading weather data...</span>
+                    </div>
+                </div>
+            </div>
+            <!-- @END_COMPONENT: LoadingState -->
+
+            <!-- @COMPONENT: WeatherDisplay [main weather information] -->
+            <div id="weatherDisplay" class="grid gap-6">
+                <!-- @COMPONENT: CurrentWeatherCard [primary weather display] -->
+                <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6">
+                    <div class="flex items-center justify-between mb-6">
+                        <div>
+                            <h2 class="text-2xl font-semibold text-slate-900 dark:text-slate-100" data-bind="currentLocation">San Francisco, CA</h2>
+                            <p class="text-sm text-slate-500 dark:text-slate-400" data-bind="lastUpdated">Last updated: 2:30 PM</p>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-4xl font-light text-slate-900 dark:text-slate-100" data-bind="temperature">72°F</div>
+                            <div class="text-sm text-slate-500 dark:text-slate-400" data-bind="feelsLike">Feels like 75°F</div>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center space-x-4 mb-6">
+                        <div class="flex items-center space-x-3">
+                            <i class="fas fa-sun text-3xl text-amber-500" data-bind="weatherIcon"></i>
+                            <div>
+                                <div class="font-medium text-slate-900 dark:text-slate-100" data-bind="condition">Sunny</div>
+                                <div class="text-sm text-slate-500 dark:text-slate-400" data-bind="description">Clear sky</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- @COMPONENT: WeatherMetrics [detailed weather data] -->
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div class="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-4">
+                            <div class="flex items-center space-x-3">
+                                <i class="fas fa-eye text-primary-600 dark:text-primary-400"></i>
+                                <div>
+                                    <div class="text-sm text-slate-500 dark:text-slate-400">Visibility</div>
+                                    <div class="font-semibold text-slate-900 dark:text-slate-100" data-bind="visibility">10 mi</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-4">
+                            <div class="flex items-center space-x-3">
+                                <i class="fas fa-droplet text-blue-600 dark:text-blue-400"></i>
+                                <div>
+                                    <div class="text-sm text-slate-500 dark:text-slate-400">Humidity</div>
+                                    <div class="font-semibold text-slate-900 dark:text-slate-100" data-bind="humidity">65%</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-4">
+                            <div class="flex items-center space-x-3">
+                                <i class="fas fa-wind text-slate-600 dark:text-slate-400"></i>
+                                <div>
+                                    <div class="text-sm text-slate-500 dark:text-slate-400">Wind Speed</div>
+                                    <div class="font-semibold text-slate-900 dark:text-slate-100" data-bind="windSpeed">8 mph</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- @END_COMPONENT: WeatherMetrics -->
+                </div>
+                <!-- @END_COMPONENT: CurrentWeatherCard -->
+
+                <!-- @COMPONENT: AdditionalWeatherInfo [secondary weather details] -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- UV Index & Air Quality Card -->
+                    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6">
+                        <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4">Air Quality & UV</h3>
+                        
+                        <div class="space-y-4">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center space-x-3">
+                                    <i class="fas fa-sun text-amber-500"></i>
+                                    <span class="text-slate-600 dark:text-slate-400">UV Index</span>
+                                </div>
+                                <div class="flex items-center space-x-2">
+                                    <span class="font-semibold text-slate-900 dark:text-slate-100" data-bind="uvIndex">6</span>
+                                    <span class="px-2 py-1 text-xs font-medium bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 rounded-full" data-bind="uvLevel">High</span>
+                                </div>
+                            </div>
+
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center space-x-3">
+                                    <i class="fas fa-leaf text-green-500"></i>
+                                    <span class="text-slate-600 dark:text-slate-400">Air Quality</span>
+                                </div>
+                                <div class="flex items-center space-x-2">
+                                    <span class="font-semibold text-slate-900 dark:text-slate-100" data-bind="aqi">42</span>
+                                    <span class="px-2 py-1 text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 rounded-full" data-bind="aqiLevel">Good</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sunrise & Sunset Card -->
+                    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6">
+                        <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4">Sun & Moon</h3>
+                        
+                        <div class="space-y-4">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center space-x-3">
+                                    <i class="fas fa-sun text-amber-500"></i>
+                                    <span class="text-slate-600 dark:text-slate-400">Sunrise</span>
+                                </div>
+                                <span class="font-semibold text-slate-900 dark:text-slate-100" data-bind="sunrise">6:42 AM</span>
+                            </div>
+
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center space-x-3">
+                                    <i class="fas fa-moon text-slate-600 dark:text-slate-400"></i>
+                                    <span class="text-slate-600 dark:text-slate-400">Sunset</span>
+                                </div>
+                                <span class="font-semibold text-slate-900 dark:text-slate-100" data-bind="sunset">7:28 PM</span>
+                            </div>
+
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center space-x-3">
+                                    <i class="fas fa-clock text-slate-600 dark:text-slate-400"></i>
+                                    <span class="text-slate-600 dark:text-slate-400">Daylight</span>
+                                </div>
+                                <span class="font-semibold text-slate-900 dark:text-slate-100" data-bind="daylight">12h 46m</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- @END_COMPONENT: AdditionalWeatherInfo -->
+
+                <!-- @COMPONENT: HourlyForecast [24-hour forecast] -->
+                <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6">
+                    <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4">24-Hour Forecast</h3>
+                    
+                    <div class="flex space-x-4 overflow-x-auto pb-2">
+                        <!-- @MAP: hourlyData.map(hour => ( -->
+                        <div class="flex-shrink-0 text-center p-3 min-w-[80px]" data-mock="true">
+                            <div class="text-sm text-slate-500 dark:text-slate-400 mb-2">3 PM</div>
+                            <i class="fas fa-sun text-amber-500 text-xl mb-2"></i>
+                            <div class="font-semibold text-slate-900 dark:text-slate-100">74°</div>
+                            <div class="text-xs text-slate-500 dark:text-slate-400 mt-1">10%</div>
+                        </div>
+
+                        <div class="flex-shrink-0 text-center p-3 min-w-[80px]" data-mock="true">
+                            <div class="text-sm text-slate-500 dark:text-slate-400 mb-2">4 PM</div>
+                            <i class="fas fa-cloud-sun text-slate-500 text-xl mb-2"></i>
+                            <div class="font-semibold text-slate-900 dark:text-slate-100">73°</div>
+                            <div class="text-xs text-slate-500 dark:text-slate-400 mt-1">15%</div>
+                        </div>
+
+                        <div class="flex-shrink-0 text-center p-3 min-w-[80px]" data-mock="true">
+                            <div class="text-sm text-slate-500 dark:text-slate-400 mb-2">5 PM</div>
+                            <i class="fas fa-cloud text-slate-500 text-xl mb-2"></i>
+                            <div class="font-semibold text-slate-900 dark:text-slate-100">71°</div>
+                            <div class="text-xs text-slate-500 dark:text-slate-400 mt-1">25%</div>
+                        </div>
+
+                        <div class="flex-shrink-0 text-center p-3 min-w-[80px]" data-mock="true">
+                            <div class="text-sm text-slate-500 dark:text-slate-400 mb-2">6 PM</div>
+                            <i class="fas fa-cloud-rain text-blue-500 text-xl mb-2"></i>
+                            <div class="font-semibold text-slate-900 dark:text-slate-100">68°</div>
+                            <div class="text-xs text-slate-500 dark:text-slate-400 mt-1">60%</div>
+                        </div>
+
+                        <div class="flex-shrink-0 text-center p-3 min-w-[80px]" data-mock="true">
+                            <div class="text-sm text-slate-500 dark:text-slate-400 mb-2">7 PM</div>
+                            <i class="fas fa-cloud-rain text-blue-500 text-xl mb-2"></i>
+                            <div class="font-semibold text-slate-900 dark:text-slate-100">66°</div>
+                            <div class="text-xs text-slate-500 dark:text-slate-400 mt-1">80%</div>
+                        </div>
+
+                        <div class="flex-shrink-0 text-center p-3 min-w-[80px]" data-mock="true">
+                            <div class="text-sm text-slate-500 dark:text-slate-400 mb-2">8 PM</div>
+                            <i class="fas fa-cloud text-slate-500 text-xl mb-2"></i>
+                            <div class="font-semibold text-slate-900 dark:text-slate-100">64°</div>
+                            <div class="text-xs text-slate-500 dark:text-slate-400 mt-1">40%</div>
+                        </div>
+                        <!-- @END_MAP )) -->
+                    </div>
+                </div>
+                <!-- @END_COMPONENT: HourlyForecast -->
+            </div>
+            <!-- @END_COMPONENT: WeatherDisplay -->
+
+            <!-- @COMPONENT: ErrorState [shown when API fails] -->
+            <div id="errorState" class="hidden">
+                <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-6 text-center">
+                    <i class="fas fa-exclamation-triangle text-red-500 text-3xl mb-4"></i>
+                    <h3 class="text-lg font-semibold text-red-900 dark:text-red-200 mb-2">Unable to load weather data</h3>
+                    <p class="text-red-700 dark:text-red-300 mb-4" data-bind="errorMessage">Please check your internet connection and try again.</p>
+                    <button 
+                        class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors duration-200"
+                        data-event="click:retryWeatherLoad"
+                        data-implementation="Should retry the failed weather API call">
+                        Try Again
+                    </button>
+                </div>
+            </div>
+            <!-- @END_COMPONENT: ErrorState -->
+        </main>
+
+        <!-- @COMPONENT: Footer [app footer with auto-refresh info] -->
+        <footer class="bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 mt-8">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+                <div class="flex flex-col sm:flex-row justify-between items-center space-y-4 sm:space-y-0">
+                    <div class="flex items-center space-x-4 text-sm text-slate-500 dark:text-slate-400">
+                        <div class="flex items-center space-x-2">
+                            <i class="fas fa-sync-alt"></i>
+                            <span>Auto-refresh: <span data-bind="refreshInterval">5 minutes</span></span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <i class="fas fa-clock"></i>
+                            <span>Next update: <span data-bind="nextRefresh">2:35 PM</span></span>
+                        </div>
+                    </div>
+                    
+                    <div class="text-sm text-slate-500 dark:text-slate-400">
+                        Powered by OpenWeather API
+                    </div>
+                </div>
+            </div>
+        </footer>
+        <!-- @END_COMPONENT: Footer -->
+    </div>
+    <!-- @END_COMPONENT: WeatherDashboard -->
+
+    <script>
+        (function() {
+            // Theme Management
+            const themeToggle = document.getElementById('themeToggle');
+            const html = document.documentElement;
+            
+            // TODO: Implement localStorage persistence for theme preference
+            // TODO: Detect system preference for initial theme
+            
+            themeToggle.addEventListener('click', function() {
+                html.classList.toggle('dark');
+                // TODO: Save theme preference to localStorage
+            });
+
+            // Search Functionality
+            const citySearch = document.getElementById('citySearch');
+            const searchButton = document.getElementById('searchButton');
+            
+            function handleSearch() {
+                const city = citySearch.value.trim();
+                if (city) {
+                    // TODO: Implement weather API call with proper error handling
+                    // TODO: Show loading state during API call
+                    // TODO: Update weather display with new data
+                    console.log('Searching weather for:', city);
+                }
+            }
+            
+            searchButton.addEventListener('click', handleSearch);
+            citySearch.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    handleSearch();
+                }
+            });
+
+            // Auto-refresh Implementation
+            // TODO: Implement setInterval for auto-refresh every 5-10 minutes
+            // TODO: Update last refresh time display
+            // TODO: Handle background refresh without disrupting user interaction
+            
+            // Weather API Integration
+            // TODO: Implement OpenWeather API integration
+            // TODO: Handle API key management securely
+            // TODO: Implement proper error handling for API failures
+            // TODO: Parse and display weather data in appropriate components
+            
+            // State Management
+            // TODO: Implement loading states for better UX
+            // TODO: Handle empty states when no city is selected
+            // TODO: Manage error states with user-friendly messages
+            
+            console.log('Weather Dashboard initialized');
+        })();
+    </script>
+</body>
+</html>
